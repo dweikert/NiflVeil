@@ -102,7 +102,12 @@ fn parse_window_info(info: &str) -> io::Result<HashMap<String, String>> {
         if let Some((key, value)) = pair.split_once(':') {
             let clean_key = key.trim().trim_matches('"');
             let clean_value = value.trim().trim_matches('"');
-            result.insert(clean_key.to_string(), clean_value.to_string());
+            // First-write-wins: hyprctl's `activeworkspace -j` ends with
+            // `lastwindowtitle`, an arbitrary window title. A title containing a
+            // fragment like `id:15` would otherwise overwrite the real workspace
+            // id (last-write-wins) and send a restored window to ws 15, which the
+            // ws-guard then relocates to ws 10. Real keys always come first.
+            result.entry(clean_key.to_string()).or_insert(clean_value.to_string());
         }
     }
 
